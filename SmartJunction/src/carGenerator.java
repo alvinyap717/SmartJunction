@@ -8,7 +8,7 @@ public class carGenerator extends RealtimeThread {
 	int[] roadNum = new int[] {1, 2, 5, 8, 11};
 	int id = 1; 
 	int road;
-	
+
 	@Override
 	public void run() {
 		while (true) {
@@ -18,23 +18,23 @@ public class carGenerator extends RealtimeThread {
 			id++;
 			for (road r : Main.roadList) {
 				if (r.id == road) {
-					r.car = car;
-					r.activeCars.add(car);
-					Main.es.submit(r);
+					if (r.activeCars.size() == 5) {
+						System.out.println(" Road " + r.id + " is full ");
+					} else {
+						r.car = car;
+						r.activeCars.add(car);
+						Main.es.submit(r);
+					}
 				}
 			}
 			waitForNextPeriod();
 		}
 	}
-	
+
 	public void add(car c) {
-		carList.addLast(c);
+		carList.add(c);
 	}
-	
-	public car getCar() {
-		return carList.removeFirst();
-	}
-	
+
 	private int getRoad() {
 		Random r = new Random();
 		return r.nextInt((4 - 0) + 1) + 0;

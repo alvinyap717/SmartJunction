@@ -1,6 +1,5 @@
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Random;
 
 import javax.realtime.RealtimeThread;
 
@@ -21,18 +20,28 @@ public class car extends RealtimeThread {
 			if (distance == 3) {
 				activeCar = getCar();
 				if (road == 1 || road == 4 || road == 7 || road == 10) {
-					removeActiveCar();
-					road += 3;
-					distance = 1;
-					addActiveCar();
-					System.out.println(getTime() + "   Car " + id + " entering road " + road);
+					if (!trafficLight.HJunction.isLocked()) {
+						removeActiveCar();
+						road += 3;
+						distance = 1;
+						addActiveCar();
+						System.out.println(getTime() + "      Car " + id + " entering road " + road);
+					} else {
+						System.out.println("      Car " + id + " is waiting in road " + road);
+						distance--;
+					}
 				} 
 				else if (road == 2 || road == 5 || road == 8 || road == 11) {
-					removeActiveCar();
-					road += 1;
-					distance = 1;
-					addActiveCar();
-					System.out.println(getTime() + "   Car " + id + " entering road " + road);
+					if (!trafficLight.VJunction.isLocked()) {
+						removeActiveCar();
+						road += 1;
+						distance = 1;
+						addActiveCar();
+						System.out.println(getTime() + "      Car " + id + " entering road " + road);
+					} else {
+						System.out.println("      Car " + id + " is waiting in road " + road);
+						distance--;
+					}
 				}
 				else {
 					removeActiveCar();

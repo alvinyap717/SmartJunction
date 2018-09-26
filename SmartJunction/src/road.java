@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.concurrent.Callable;
 
@@ -22,9 +24,17 @@ public class road implements Callable<car> {
 
 	@Override
 	public car call() throws Exception {
-		System.out.println("car " + car.id + " has entered road " + id);
+		System.out.println(getTime() + "   Car " + car.id + " has entered road " + id);
 		carRtt = new RealtimeThread(null, rel, null, null, null, car);
 		carRtt.start();
 		return car;
+	}
+	
+	private String getTime() {
+		SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm:ss");
+
+		Date now = new Date();
+
+		return sdfTime.format(now);
 	}
 }
