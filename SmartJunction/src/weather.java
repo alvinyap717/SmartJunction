@@ -7,110 +7,117 @@ import javax.realtime.Interruptible;
 import javax.realtime.PeriodicParameters;
 import javax.realtime.RealtimeThread;
 import javax.realtime.RelativeTime;
-import javax.realtime.ReleaseParameters;
 
 public class weather extends RealtimeThread{
 	modeChanger modeChange;
 	modeSwitcher Switch;
 	static AsyncEvent event;
-	public weather() {
-		modeChange = new modeChanger(Mode.RAINNY);
+	trafficLight tf;
+	Random r = new Random();
+	static int temp = 20;
+	static int flood;
+	static boolean status = false;
+
+	public weather(trafficLight tf) {
+		modeChange = new modeChanger(Mode.SUNNY);
 		Switch = new modeSwitcher(modeChange);
 		event = new AsyncEvent();
 		event.addHandler(Switch);
+		this.tf = tf;
+		sensor s = new sensor();
+		s.setReleaseParameters(new PeriodicParameters(new RelativeTime(100, 0)));
+		s.start();
 	}
-	
+
 	public void run() {
-		Rainny rainny = new Rainny();
-		Sunny sunny = new Sunny();
-		
-		boolean ok=true;
-		while (ok) {
+		Rainny rainny = new Rainny(tf);
+		Sunny sunny = new Sunny(tf);
+
+		while (true) {
 			if (modeChange.currentMode() == Mode.RAINNY) {
 				modeChange.doInterruptible(rainny);
 			}
-			else {
+			else if (modeChange.currentMode() == Mode.SUNNY){
 				modeChange.doInterruptible(sunny);
 			}
 			waitForNextPeriod();
 		}				
 	}
-	public void checkWeather() {
-
-		weather ex = new weather();
-		Random r = new Random();
-		RelativeTime release = new RelativeTime(1000,0);
-		ReleaseParameters rel = new PeriodicParameters(release);
-		ex.setReleaseParameters(rel);
-		ex.start();
-		while (true) {
-			int weathernum = r.nextInt((10 - 0) + 1) + 0;
-			RelativeTime slow = new RelativeTime(1000, 0);
-			try {
-				RealtimeThread.sleep(slow);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			if(weathernum == 3) {
-				System.out.println(weathernum);
-				event.fire();
-			}
-		}
-	}
-	
-	public static void main(String[] args) {
-		weather ex = new weather();
-		ex.checkWeather();
-	}
 }
 
 class Rainny implements Interruptible{
+	trafficLight tf;
+
+	public Rainny(trafficLight tf) {
+		this.tf = tf;
+	}
 
 	@Override
 	public void interruptAction(AsynchronouslyInterruptedException exception) {
-		System.out.println("****Now is Rainny Day******");
+		System.out.println("\t****Now is Sunny Day****");
+		tf.normalSchedule.fire();
+		carGenerator.rel = new PeriodicParameters(new RelativeTime(3000, 0));
 	}
 
 	@Override
 	public void run(AsynchronouslyInterruptedException exception) throws AsynchronouslyInterruptedException {
-		int x=1;
-		System.out.println("Rainny Day");
 		while (true) {
-			for (int i=1;i<10;i++) {
-				System.out.println("operating in Rainny Day: " + i);
-				//x++;	
-				try {
-					Thread.sleep(90);
+			weather.temp -= new Random().nextInt((5 - 1) - 1) + 1;
+			weather.flood += new Random().nextInt((10 - 1) - 1) + 1;
+			if (weather.flood > 35) {
+				for (road r : Main.roadList) {
+					if (r.id == 1 || r.id == 4 || r.id == 7) {
+						for (car c : r.activeCars) {
+							c.incident.fire();
+						}
+					} 
+					else if (r.id == 10 || r.id == 13) {
+						for (car c : r.activeCars) {
+							c.speedUp.fire();
+						}
+					}
 				}
-				catch (Exception e) {}
-				
+				if (!weather.status) {
+					System.out.println("\t****Road 7 is flood!****");
+					weather.status = true;
+				}
 			}
-			
+			try {
+				Thread.sleep(1000);
+			}
+			catch (Exception e) {}
 			RealtimeThread.waitForNextPeriod();
 		}
 	}
 }
+
 class Sunny implements Interruptible{
+	trafficLight tf;
+
+	public Sunny(trafficLight tf) {
+		this.tf = tf;
+	}
 
 	@Override
 	public void interruptAction(AsynchronouslyInterruptedException exception) {
-		System.out.println("****Now is Sunny Day******");
+		System.out.println("\t****Now is Rainny Day****");
+		tf.longSchedule.fire();
+		carGenerator.rel = new PeriodicParameters(new RelativeTime(5000, 0));
 	}
 
 	@Override
 	public void run(AsynchronouslyInterruptedException exception) throws AsynchronouslyInterruptedException {
-		int x=1;
-		System.out.println("Sunny Day");
 		while (true) {
-			for (int i=1;i<10;i++) {
-				System.out.println("operating in Sunny Day: " + i);
-				//x++;	
-				try {
-					Thread.sleep(90);
-				}
-				catch (Exception e) {}
-				
+			weather.temp += new Random().nextInt((5 - 1) - 1) + 1;
+			weather.flood = 0;
+			if (weather.status) {
+				System.out.println("\t****Road 7 is now clear****");
+				weather.status = false;
 			}
+			try {
+				Thread.sleep(1000);
+			}
+			catch (Exception e) {}
 			RealtimeThread.waitForNextPeriod();
 		}
 	}
@@ -119,40 +126,84 @@ class Sunny implements Interruptible{
 enum Mode {RAINNY, SUNNY}
 
 class modeChanger extends AsynchronouslyInterruptedException{
-	Mode current;
+	static Mode current;
+
 	public modeChanger(Mode initial) {
 		super();
 		current = initial;
 	}
+
 	public synchronized Mode currentMode() {
 		return current;
 	}
+
 	public synchronized void setMode(Mode nextMode) {
 		current = nextMode;
 	}
-	
+
 	public synchronized void toggleMode() {
-		if (current == Mode.RAINNY) {
-			current = Mode.SUNNY;
-		}
-		else {
+		if (current == Mode.SUNNY) {
 			current = Mode.RAINNY;
 		}
-		System.out.println("mode changed");
+		else {
+			current = Mode.SUNNY;
+		}
 	}
 }
 
 class modeSwitcher extends AsyncEventHandler {
 	modeChanger aie;
+
 	public modeSwitcher(modeChanger aie) {
 		this.aie=aie;
 	}
+
 	public void handleAsyncEvent() {
-		System.out.println("fired");
 		aie.toggleMode();
 		aie.fire();
 	}
 }
 
+class sensor extends RealtimeThread {
 
+	public void run() {
+		while (true) {
+			System.out.println("TEMP:" + weather.temp);
+			System.out.println("FLOOD:" + weather.flood);
+			if (weather.temp > 50) {
+				weather.temp = 50;
+				try {
+					for (road r : Main.roadList) {
+						for (car c : r.activeCars) {
+							c.slowDown.fire();
+						}
+					}
+				}catch (Exception e) {
+					// TODO: handle exception
+				}
+				weather.event.fire();
+			}
+			else if (weather.temp < 20) {
+				weather.temp = 20;
+				try {
+					for (road r : Main.roadList) {
+						for (car c : r.activeCars) {
+							c.speedUp.fire();
+						}
+					}
+				}catch (Exception e) {
+					// TODO: handle exception
+				}
+				weather.event.fire();
+			}
+			
+			RelativeTime slow = new RelativeTime(5000, 0);
+			try {
+				RealtimeThread.sleep(slow);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+}
 
