@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 import javax.realtime.AsyncEvent;
@@ -43,6 +45,14 @@ public class weather extends RealtimeThread{
 			waitForNextPeriod();
 		}				
 	}
+	
+	public static String getTime() {
+		SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm:ss");
+
+		Date now = new Date();
+
+		return sdfTime.format(now);
+	}
 }
 
 class Rainny implements Interruptible{
@@ -54,7 +64,7 @@ class Rainny implements Interruptible{
 
 	@Override
 	public void interruptAction(AsynchronouslyInterruptedException exception) {
-		System.out.println("\t****Now is Sunny Day****");
+		System.out.println(weather.getTime() + "   W    ****Now is Sunny Day****");
 		tf.normalSchedule.fire();
 		carGenerator.rel = new PeriodicParameters(new RelativeTime(3000, 0));
 	}
@@ -78,7 +88,8 @@ class Rainny implements Interruptible{
 					}
 				}
 				if (!weather.status) {
-					System.out.println("\t****Road 7 is flood!****");
+					System.out.println(weather.getTime() + "   W   ****Road 7 is flood!****");
+					tf.longerSchedule.fire();
 					weather.status = true;
 				}
 			}
@@ -100,7 +111,7 @@ class Sunny implements Interruptible{
 
 	@Override
 	public void interruptAction(AsynchronouslyInterruptedException exception) {
-		System.out.println("\t****Now is Rainny Day****");
+		System.out.println(weather.getTime() + "   W    ****Now is Rainny Day****");
 		tf.longSchedule.fire();
 		carGenerator.rel = new PeriodicParameters(new RelativeTime(5000, 0));
 	}
@@ -111,7 +122,7 @@ class Sunny implements Interruptible{
 			weather.temp += new Random().nextInt((5 - 1) - 1) + 1;
 			weather.flood = 0;
 			if (weather.status) {
-				System.out.println("\t****Road 7 is now clear****");
+				System.out.println(weather.getTime() + "   W    ****Road 7 is now clear****");
 				weather.status = false;
 			}
 			try {
@@ -168,10 +179,10 @@ class sensor extends RealtimeThread {
 
 	public void run() {
 		while (true) {
-			System.out.println("TEMP:" + weather.temp);
-			System.out.println("FLOOD:" + weather.flood);
-			if (weather.temp > 50) {
-				weather.temp = 50;
+//			System.out.println("TEMP:" + weather.temp);
+//			System.out.println("FLOOD:" + weather.flood);
+			if (weather.temp > 80) {
+				weather.temp = 80;
 				try {
 					for (road r : Main.roadList) {
 						for (car c : r.activeCars) {
@@ -197,7 +208,7 @@ class sensor extends RealtimeThread {
 				weather.event.fire();
 			}
 			
-			RelativeTime slow = new RelativeTime(5000, 0);
+			RelativeTime slow = new RelativeTime(500, 0);
 			try {
 				RealtimeThread.sleep(slow);
 			} catch (InterruptedException e) {
@@ -206,4 +217,6 @@ class sensor extends RealtimeThread {
 		}
 	}
 }
+
+	
 

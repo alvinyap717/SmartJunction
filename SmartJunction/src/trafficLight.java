@@ -35,7 +35,8 @@ public class trafficLight extends RealtimeThread {
 			if (status.equals("H_Lock")) {
 				try {
 					HJunction.lock();
-					System.out.println(getTime() + " Vertical Road GREEN Light");
+					System.out.println(getTime() + "   TL   *****Vertical Road GREEN Light*****");
+					System.out.println(getTime() + "   TL   *****Horizontal Road RED Light*****");
 					VJunction.unlock();
 				} catch (Exception e) {
 					// TODO: handle exception
@@ -45,7 +46,8 @@ public class trafficLight extends RealtimeThread {
 			else {
 				try {
 				VJunction.lock();
-				System.out.println(getTime() + " Horizontal Road GREEN Light");
+				System.out.println(getTime() + "   TL   *****Horizontal Road GREEN Light*****");
+				System.out.println(getTime() + "   TL     *****Vertical Road RED Light*****");
 				HJunction.unlock();
 				} catch (Exception e) {
 					// TODO: handle exception
@@ -56,7 +58,7 @@ public class trafficLight extends RealtimeThread {
 		}
 	}
 	
-	private String getTime() {
+	public static String getTime() {
 		SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm:ss");
 
 		Date now = new Date();
@@ -78,7 +80,7 @@ class longMode extends AsyncEventHandler {
 		rtt.setReleaseParameters(rel);
 		rtt.schedulePeriodic();
 		
-		System.out.println("   Traffic Light changes each 6 seconds");
+		System.out.println(trafficLight.getTime() + "   TL   *****Traffic Light changes each 6 seconds*****");
 	}
 }
 
@@ -94,7 +96,7 @@ class normalMode extends AsyncEventHandler {
 		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(3000, 0));
 		rtt.setReleaseParameters(rel);
 		rtt.schedulePeriodic();
-		System.out.println("   Traffic Light changes each 3 seconds");
+		System.out.println(trafficLight.getTime() + "   TL   *****Traffic Light changes each 3 seconds*****");
 	}
 }
 
@@ -111,6 +113,6 @@ class longerMode extends AsyncEventHandler {
 		rtt.setReleaseParameters(rel);
 		rtt.schedulePeriodic();
 		
-		System.out.println("   Traffic Light changes each 8 seconds");
+		System.out.println(trafficLight.getTime() + "   TL   *****Traffic Light changes each 8 seconds*****");
 	}
 }

@@ -32,40 +32,48 @@ public class car extends RealtimeThread {
 	public void run() {
 		while (true) {
 			if (distance == 0) {
-				System.out.println(getTime() + "   Car " + id + " has entered road " + road);
+				System.out.println(getTime() + "   C    Car " + id + " has entered road " + road);
 				distance++;
 			} else {
 				if (road == 1 || road == 4 || road == 7 || road == 10) {
-//					if (road == 4 && pedestrianRoad.P2.isLocked()) {
-//						System.out.println(getTime() + "      Car " + id + " is waiting in front of Pedestrian Cross 2 in road " + road);
-//					} else {
-						if (!trafficLight.HJunction.isLocked()) {
+					//					if (road == 4 && pedestrianRoad.P2.isLocked()) {
+					//						System.out.println(getTime() + "      Car " + id + " is waiting in front of Pedestrian Cross 2 in road " + road);
+					//					} else {
+					if (!trafficLight.HJunction.isLocked()) {
+						if (Main.roadList.get(road+3-1).activeCars.size() < 2) {
 							removeActiveCar(this);
 							road += 3;
 							addActiveCar(this);
-							System.out.println(getTime() + "      Car " + id + " entering road " + road);
+							System.out.println(getTime() + "   C    Car " + id + " entering road " + road);
 						} else {
-							System.out.println(getTime() + "      Car " + id + " is waiting in road " + road);
+							System.out.println(getTime() + "   C    Road " + (road+3) + " is full. Car " + id + " is waiting in road " + road);
 						}
-//					}
+					} else {
+						System.out.println(getTime() + "   JL   Car " + id + " is waiting in road " + road);
+					}
+					//					}
 				} 
 				else if (road == 2 || road == 5 || road == 8 || road == 11) {
-//					if (road == 2 && pedestrianRoad.P1.isLocked()) {
-//						System.out.println(getTime() + "      Car " + id + " is waiting in front of Pedestrian Cross 1 in road " + road);
-//					} else {
-						if (!trafficLight.VJunction.isLocked()) {
+					//					if (road == 2 && pedestrianRoad.P1.isLocked()) {
+					//						System.out.println(getTime() + "      Car " + id + " is waiting in front of Pedestrian Cross 1 in road " + road);
+					//					} else {
+					if (!trafficLight.VJunction.isLocked()) {
+						if (Main.roadList.get(road).activeCars.size() < 2) {
 							removeActiveCar(this);
 							road += 1;
 							addActiveCar(this);
-							System.out.println(getTime() + "      Car " + id + " entering road " + road);
+							System.out.println(getTime() + "   C    Car " + id + " entering road " + road);
 						} else {
-							System.out.println(getTime() + "      Car " + id + " is waiting in road " + road);
+							System.out.println(getTime() + "   C    Road " + (road+1) + " is full. Car " + id + " is waiting in road " + road);
 						}
-//					}
+					} else {
+						System.out.println(getTime() + "   JL   Car " + id + " is waiting in road " + road);
+					}
+					//					}
 				}
 				else {
 					removeActiveCar(this);
-					System.out.println(getTime() + "   Car " + id + " has reach the end of road " + road + " and leave");
+					System.out.println(getTime() + "   C    Car " + id + " has reach the end of road " + road + " and leave");
 					deschedulePeriodic();
 					break;
 				}

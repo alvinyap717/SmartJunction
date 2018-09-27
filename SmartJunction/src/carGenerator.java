@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.Random;
 
@@ -20,18 +22,26 @@ public class carGenerator extends RealtimeThread {
 			car car = new car(id, road);
 			add(car);
 			id++;
-			for (road r : Main.roadList) {
-				if (r.id == road) {
-					if (r.activeCars.size() == 5) {
-						System.out.println(" Road " + r.id + " is full ");
-						System.out.println(" Car " + car.id + " is waiting to enter road " + r.id);
-					} else {
-						r.car = car;
-						r.activeCars.add(car);
-						car.setReleaseParameters(rel);
-						car.start();
+			try {
+				for (car c : carList) {
+					for (road r : Main.roadList) {
+						if (r.id == c.road) {
+							if (r.activeCars.size() == 5) {
+								System.out.println(getTime() + "   CG   Road " + r.id + " is full. Car " + c.id + " is waiting to enter road " + r.id);
+							} else {
+								carList.remove(c);
+								r.car = c;
+								r.activeCars.add(c);
+								c.setReleaseParameters(rel);
+								c.start();
+								break;
+							}
+						}
 					}
 				}
+			} 
+			catch (Exception e) {
+				// TODO: handle exception
 			}
 			waitForNextPeriod();
 		}
@@ -44,5 +54,13 @@ public class carGenerator extends RealtimeThread {
 	private int getRoad() {
 		Random r = new Random();
 		return r.nextInt((4 - 0) + 1) + 0;
+	}
+	
+	private String getTime() {
+		SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm:ss");
+
+		Date now = new Date();
+
+		return sdfTime.format(now);
 	}
 }
