@@ -4,6 +4,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import javax.realtime.AsyncEvent;
 import javax.realtime.AsyncEventHandler;
+import javax.realtime.AsynchronouslyInterruptedException;
+import javax.realtime.Interruptible;
 import javax.realtime.PeriodicParameters;
 import javax.realtime.RealtimeThread;
 import javax.realtime.RelativeTime;
@@ -12,52 +14,37 @@ import javax.realtime.ReleaseParameters;
 public class trafficLight extends RealtimeThread {
 	static ReentrantLock HJunction;
 	static ReentrantLock VJunction;
-	String status;
-	AsyncEvent longSchedule;
-	AsyncEvent normalSchedule;
-	AsyncEvent longerSchedule;
+	TLModeChanger modeChange;
+	TLModeSwitcher Switch;
+	static AsyncEvent event;
+	static String  status = "HLock";
 
 	public trafficLight() {
 		HJunction = new ReentrantLock();
 		VJunction = new ReentrantLock();
-		status = "H_Lock";
-		longSchedule = new AsyncEvent();
-		longSchedule.addHandler(new longMode(this));
-		normalSchedule = new AsyncEvent();
-		normalSchedule.addHandler(new normalMode(this));
-		longerSchedule = new AsyncEvent();
-		longerSchedule.addHandler(new longerMode(this));
+
+		modeChange = new TLModeChanger("VLock");
+		Switch = new TLModeSwitcher(modeChange);
+		event = new AsyncEvent();
+		event.addHandler(Switch);
 	}
 
 	@Override
 	public void run() {
+		HLock HLock = new HLock();
+		VLock VLock = new VLock();
+
 		while (true) {
-			if (status.equals("H_Lock")) {
-				try {
-					HJunction.lock();
-					System.out.println(getTime() + "   TL   *****Vertical Road GREEN Light*****");
-					System.out.println(getTime() + "   TL   *****Horizontal Road RED Light*****");
-					VJunction.unlock();
-				} catch (Exception e) {
-					// TODO: handle exception
-				}
-				status = "V_Lock";
+			if (modeChange.currentMode() == "VLock") {
+				modeChange.doInterruptible(VLock);
 			}
 			else {
-				try {
-				VJunction.lock();
-				System.out.println(getTime() + "   TL   *****Horizontal Road GREEN Light*****");
-				System.out.println(getTime() + "   TL     *****Vertical Road RED Light*****");
-				HJunction.unlock();
-				} catch (Exception e) {
-					// TODO: handle exception
-				}
-				status = "H_Lock";
+				modeChange.doInterruptible(HLock);
 			}
 			waitForNextPeriod();
-		}
+		}	
 	}
-	
+
 	public static String getTime() {
 		SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm:ss");
 
@@ -67,52 +54,183 @@ public class trafficLight extends RealtimeThread {
 	}
 }
 
-class longMode extends AsyncEventHandler {
-	RealtimeThread rtt;
+class HLock implements Interruptible {
+
+	@Override
+	public void interruptAction(AsynchronouslyInterruptedException exception) {
+//		System.out.println(trafficLight.getTime() + "   TL   *****Taffic Light Changing*****");
+	}
+
+	@Override
+	public void run(AsynchronouslyInterruptedException exception) throws AsynchronouslyInterruptedException {
+		while (true) {
+			if (trafficLight.status.equals("HLock")) {
+				trafficLight.status = "VLock";
+				try {
+					trafficLight.HJunction.lock();
+					trafficLight.VJunction.unlock();
+				} catch (Exception e) {
+					// TODO: handle exception
+				}
+				System.out.println(trafficLight.getTime() + "   TL   *****Horizontal Road traffic light turns RED*****");
+				System.out.println(trafficLight.getTime() + "   TL   *****Vertical Road traffic light turns GREEN*****");
+				
+			}
+			try {
+				Thread.sleep(1000);
+			} 
+			catch (Exception e) {
+				// TODO: handle exception
+			}
+			RealtimeThread.waitForNextPeriod();
+		}
+	}
+
+}
+
+class VLock implements Interruptible {
+
+	@Override
+	public void interruptAction(AsynchronouslyInterruptedException exception) {
+//		System.out.println(trafficLight.getTime() + "   TL   *****Taffic Light Changing*****");
+	}
+
+	@Override
+	public void run(AsynchronouslyInterruptedException exception) throws AsynchronouslyInterruptedException {
+		while (true) {
+			if (trafficLight.status.equals("VLock")) {
+				trafficLight.status = "HLock";
+				try {
+					trafficLight.VJunction.lock();
+					trafficLight.HJunction.unlock();
+				} catch (Exception e) {
+					// TODO: handle exception
+				}
+				System.out.println(trafficLight.getTime() + "   TL   *****Vertical Road traffic light turns RED*****");
+				System.out.println(trafficLight.getTime() + "   TL   *****Horizontal Road traffic light turns GREEN*****");
+			}
+			try {
+				Thread.sleep(1000);
+			} 
+			catch (Exception e) {
+				// TODO: handle exception
+			}
+			RealtimeThread.waitForNextPeriod();
+		}
+	}
+
+}
+
+class TLModeChanger extends AsynchronouslyInterruptedException {
+	String mode;
+
+	public TLModeChanger(String initial) {
+		super();
+		mode = initial;
+	}
+
+	public synchronized String currentMode() {
+		return mode;
+	}
+
+	public synchronized void toggleMode() {
+		if (mode == "HLock") {
+			mode = "VLock";
+		}
+		else {
+			mode = "HLock";
+		}
+	}
+}
+
+class TLModeSwitcher extends AsyncEventHandler {
+	TLModeChanger aie;
+
+	public TLModeSwitcher(TLModeChanger aie) {
+		this.aie = aie;
+	}
+
+	public void handleAsyncEvent() {
+		aie.toggleMode();
+		aie.fire();
+	}
+}
+
+class TFsensor extends RealtimeThread {
+	AsyncEvent longMode;
+	AsyncEvent normalMode;
+	AsyncEvent incidentMode;
 	
-	public longMode(RealtimeThread rtt) {
-		this.rtt = rtt;
+	public TFsensor() {
+		longMode = new AsyncEvent();
+		longMode.addHandler(new longMode(this));
+		
+		normalMode = new AsyncEvent();
+		normalMode.addHandler(new normalMode(this));
+		
+		incidentMode = new AsyncEvent();
+		incidentMode.addHandler(new incidentMode(this));
 	}
 	
 	@Override
+	public void run() {
+		while (true) {
+			try {
+				Thread.sleep(500);
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+			trafficLight.event.fire();
+			waitForNextPeriod();
+		}
+	}
+}
+
+class longMode extends AsyncEventHandler {
+	RealtimeThread rtt;
+
+	public longMode(RealtimeThread rtt) {
+		this.rtt = rtt;
+	}
+
+	@Override
 	public void handleAsyncEvent() {
-		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(6000, 0));
+		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(12000, 0));
 		rtt.setReleaseParameters(rel);
 		rtt.schedulePeriodic();
-		
-		System.out.println(trafficLight.getTime() + "   TL   *****Traffic Light changes each 6 seconds*****");
+
+		System.out.println(trafficLight.getTime() + "   TL   *****Traffic Light changes each 12 seconds*****");
 	}
 }
 
 class normalMode extends AsyncEventHandler {
 	RealtimeThread rtt;
-	
+
 	public normalMode(RealtimeThread rtt) {
 		this.rtt = rtt;
 	}
-	
+
 	@Override
 	public void handleAsyncEvent() {
-		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(3000, 0));
+		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(6000, 0));
 		rtt.setReleaseParameters(rel);
 		rtt.schedulePeriodic();
-		System.out.println(trafficLight.getTime() + "   TL   *****Traffic Light changes each 3 seconds*****");
+		System.out.println(trafficLight.getTime() + "   TL   *****Traffic Light changes each 6 seconds*****");
 	}
 }
 
-class longerMode extends AsyncEventHandler {
+class incidentMode extends AsyncEventHandler {
 	RealtimeThread rtt;
-	
-	public longerMode(RealtimeThread rtt) {
+
+	public incidentMode(RealtimeThread rtt) {
 		this.rtt = rtt;
 	}
-	
+
 	@Override
 	public void handleAsyncEvent() {
-		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(8000, 0));
+		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(15000, 0));
 		rtt.setReleaseParameters(rel);
 		rtt.schedulePeriodic();
-		
-		System.out.println(trafficLight.getTime() + "   TL   *****Traffic Light changes each 8 seconds*****");
+		System.out.println(trafficLight.getTime() + "   TL   *****Traffic Light changes each 15 seconds*****");
 	}
 }

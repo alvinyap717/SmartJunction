@@ -11,35 +11,38 @@ import javax.realtime.RealtimeThread;
 import javax.realtime.RelativeTime;
 
 public class weather extends RealtimeThread{
-	modeChanger modeChange;
-	modeSwitcher Switch;
+	static String currMode = "";
+	WModeChanger modeChange;
+	WModeSwitcher Switch;
 	static AsyncEvent event;
-	trafficLight tf;
 	Random r = new Random();
 	static int temp = 20;
 	static int flood;
 	static boolean status = false;
+	TFsensor tfS;
 
-	public weather(trafficLight tf) {
-		modeChange = new modeChanger(Mode.SUNNY);
-		Switch = new modeSwitcher(modeChange);
+	public weather(TFsensor tfS) {
+		currMode = "SUNNY";
+		modeChange = new WModeChanger("SUNNY");
+		Switch = new WModeSwitcher(modeChange);
 		event = new AsyncEvent();
 		event.addHandler(Switch);
-		this.tf = tf;
+		this.tfS = tfS;
+		
 		sensor s = new sensor();
 		s.setReleaseParameters(new PeriodicParameters(new RelativeTime(100, 0)));
 		s.start();
 	}
 
 	public void run() {
-		Rainny rainny = new Rainny(tf);
-		Sunny sunny = new Sunny(tf);
+		Rainny rainny = new Rainny(tfS);
+		Sunny sunny = new Sunny(tfS);
 
 		while (true) {
-			if (modeChange.currentMode() == Mode.RAINNY) {
+			if (modeChange.currentMode() == "RAINNY") {
 				modeChange.doInterruptible(rainny);
 			}
-			else if (modeChange.currentMode() == Mode.SUNNY){
+			else if (modeChange.currentMode() == "SUNNY"){
 				modeChange.doInterruptible(sunny);
 			}
 			waitForNextPeriod();
@@ -56,40 +59,36 @@ public class weather extends RealtimeThread{
 }
 
 class Rainny implements Interruptible{
-	trafficLight tf;
+	TFsensor tfS;
 
-	public Rainny(trafficLight tf) {
-		this.tf = tf;
+	public Rainny(TFsensor tfS) {
+		this.tfS = tfS;
 	}
 
 	@Override
 	public void interruptAction(AsynchronouslyInterruptedException exception) {
 		System.out.println(weather.getTime() + "   W    ****Now is Sunny Day****");
-		tf.normalSchedule.fire();
-		carGenerator.rel = new PeriodicParameters(new RelativeTime(3000, 0));
+		if (weather.status) {
+			System.out.println(weather.getTime() + "   W    ****Road 7 is now clear****");
+			weather.status = false;
+		}
+		if (CGsensor.x == 1 || CGsensor.x == 3) {
+			tfS.normalMode.fire();
+		} else {
+			tfS.longMode.fire();
+		}
 	}
 
 	@Override
 	public void run(AsynchronouslyInterruptedException exception) throws AsynchronouslyInterruptedException {
 		while (true) {
-			weather.temp -= new Random().nextInt((5 - 1) - 1) + 1;
-			weather.flood += new Random().nextInt((10 - 1) - 1) + 1;
+			weather.temp -= new Random().nextInt((5 - 1) + 1) + 1;
+			weather.flood += new Random().nextInt((10 - 1) + 1) + 1;
 			if (weather.flood > 35) {
-				for (road r : Main.roadList) {
-					if (r.id == 1 || r.id == 4 || r.id == 7) {
-						for (car c : r.activeCars) {
-							c.incident.fire();
-						}
-					} 
-					else if (r.id == 10 || r.id == 13) {
-						for (car c : r.activeCars) {
-							c.speedUp.fire();
-						}
-					}
-				}
 				if (!weather.status) {
 					System.out.println(weather.getTime() + "   W   ****Road 7 is flood!****");
-					tf.longerSchedule.fire();
+					tfS.incidentMode.fire();
+					weather.currMode = "FLOOD";
 					weather.status = true;
 				}
 			}
@@ -103,28 +102,24 @@ class Rainny implements Interruptible{
 }
 
 class Sunny implements Interruptible{
-	trafficLight tf;
+	TFsensor tfS;
 
-	public Sunny(trafficLight tf) {
-		this.tf = tf;
+	public Sunny(TFsensor tfS) {
+		this.tfS = tfS;
 	}
 
 	@Override
 	public void interruptAction(AsynchronouslyInterruptedException exception) {
 		System.out.println(weather.getTime() + "   W    ****Now is Rainny Day****");
-		tf.longSchedule.fire();
-		carGenerator.rel = new PeriodicParameters(new RelativeTime(5000, 0));
+		tfS.longMode.fire();
 	}
 
 	@Override
 	public void run(AsynchronouslyInterruptedException exception) throws AsynchronouslyInterruptedException {
 		while (true) {
-			weather.temp += new Random().nextInt((5 - 1) - 1) + 1;
+			weather.temp += new Random().nextInt((10 - 1) + 1) + 1;
 			weather.flood = 0;
-			if (weather.status) {
-				System.out.println(weather.getTime() + "   W    ****Road 7 is now clear****");
-				weather.status = false;
-			}
+			
 			try {
 				Thread.sleep(1000);
 			}
@@ -134,39 +129,35 @@ class Sunny implements Interruptible{
 	}
 }
 
-enum Mode {RAINNY, SUNNY}
+class WModeChanger extends AsynchronouslyInterruptedException {
+	String mode;
 
-class modeChanger extends AsynchronouslyInterruptedException{
-	static Mode current;
-
-	public modeChanger(Mode initial) {
+	public WModeChanger(String initial) {
 		super();
-		current = initial;
+		mode = initial;
 	}
 
-	public synchronized Mode currentMode() {
-		return current;
-	}
-
-	public synchronized void setMode(Mode nextMode) {
-		current = nextMode;
+	public synchronized String currentMode() {
+		return mode;
 	}
 
 	public synchronized void toggleMode() {
-		if (current == Mode.SUNNY) {
-			current = Mode.RAINNY;
+		if (mode == "RAINNY") {
+			mode = "SUNNY";
+			weather.currMode = "SUNNY";
 		}
 		else {
-			current = Mode.SUNNY;
+			mode = "RAINNY";
+			weather.currMode = "RAINNY";
 		}
 	}
 }
 
-class modeSwitcher extends AsyncEventHandler {
-	modeChanger aie;
+class WModeSwitcher extends AsyncEventHandler {
+	WModeChanger aie;
 
-	public modeSwitcher(modeChanger aie) {
-		this.aie=aie;
+	public WModeSwitcher(WModeChanger aie) {
+		this.aie = aie;
 	}
 
 	public void handleAsyncEvent() {
@@ -179,32 +170,12 @@ class sensor extends RealtimeThread {
 
 	public void run() {
 		while (true) {
-//			System.out.println("TEMP:" + weather.temp);
-//			System.out.println("FLOOD:" + weather.flood);
 			if (weather.temp > 80) {
 				weather.temp = 80;
-				try {
-					for (road r : Main.roadList) {
-						for (car c : r.activeCars) {
-							c.slowDown.fire();
-						}
-					}
-				}catch (Exception e) {
-					// TODO: handle exception
-				}
 				weather.event.fire();
 			}
 			else if (weather.temp < 20) {
 				weather.temp = 20;
-				try {
-					for (road r : Main.roadList) {
-						for (car c : r.activeCars) {
-							c.speedUp.fire();
-						}
-					}
-				}catch (Exception e) {
-					// TODO: handle exception
-				}
 				weather.event.fire();
 			}
 			

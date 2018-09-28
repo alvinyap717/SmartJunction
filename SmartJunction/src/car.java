@@ -1,31 +1,17 @@
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import javax.realtime.AsyncEvent;
-import javax.realtime.AsyncEventHandler;
-import javax.realtime.PeriodicParameters;
 import javax.realtime.RealtimeThread;
-import javax.realtime.RelativeTime;
-import javax.realtime.ReleaseParameters;
 
 public class car extends RealtimeThread {
 	int id;
 	int road;
 	int distance = 0;
 	car activeCar;
-	AsyncEvent slowDown;
-	AsyncEvent speedUp;
-	AsyncEvent incident;
 
 	public car(int id, int road) {
 		this.id = id;
 		this.road = road;
-		slowDown = new AsyncEvent();
-		slowDown.addHandler(new slowDown(this));
-		speedUp = new AsyncEvent();
-		speedUp.addHandler(new speedUp(this));
-		incident = new AsyncEvent();
-		incident.addHandler(new incident(this));
 	}
 
 	@Override
@@ -33,43 +19,38 @@ public class car extends RealtimeThread {
 		while (true) {
 			if (distance == 0) {
 				System.out.println(getTime() + "   C    Car " + id + " has entered road " + road);
-				distance++;
-			} else {
+			} else if (distance == 3){
 				if (road == 1 || road == 4 || road == 7 || road == 10) {
-					//					if (road == 4 && pedestrianRoad.P2.isLocked()) {
-					//						System.out.println(getTime() + "      Car " + id + " is waiting in front of Pedestrian Cross 2 in road " + road);
-					//					} else {
 					if (!trafficLight.HJunction.isLocked()) {
-						if (Main.roadList.get(road+3-1).activeCars.size() < 2) {
+						if (Main.roadList.get(road+3-1).activeCars.size() < 10) {
 							removeActiveCar(this);
 							road += 3;
 							addActiveCar(this);
 							System.out.println(getTime() + "   C    Car " + id + " entering road " + road);
+							distance = 0;
 						} else {
 							System.out.println(getTime() + "   C    Road " + (road+3) + " is full. Car " + id + " is waiting in road " + road);
 						}
 					} else {
 						System.out.println(getTime() + "   JL   Car " + id + " is waiting in road " + road);
+						distance--;
 					}
-					//					}
 				} 
 				else if (road == 2 || road == 5 || road == 8 || road == 11) {
-					//					if (road == 2 && pedestrianRoad.P1.isLocked()) {
-					//						System.out.println(getTime() + "      Car " + id + " is waiting in front of Pedestrian Cross 1 in road " + road);
-					//					} else {
 					if (!trafficLight.VJunction.isLocked()) {
-						if (Main.roadList.get(road).activeCars.size() < 2) {
+						if (Main.roadList.get(road).activeCars.size() < 10) {
 							removeActiveCar(this);
 							road += 1;
 							addActiveCar(this);
 							System.out.println(getTime() + "   C    Car " + id + " entering road " + road);
+							distance = 0;
 						} else {
 							System.out.println(getTime() + "   C    Road " + (road+1) + " is full. Car " + id + " is waiting in road " + road);
 						}
 					} else {
 						System.out.println(getTime() + "   JL   Car " + id + " is waiting in road " + road);
+						distance--;
 					}
-					//					}
 				}
 				else {
 					removeActiveCar(this);
@@ -78,6 +59,7 @@ public class car extends RealtimeThread {
 					break;
 				}
 			}
+			distance++;
 			waitForNextPeriod();
 		}
 	}
@@ -104,50 +86,5 @@ public class car extends RealtimeThread {
 		Date now = new Date();
 
 		return sdfTime.format(now);
-	}
-}
-
-class slowDown extends AsyncEventHandler {
-	car car;
-
-	public slowDown(car car) {
-		this.car = car;
-	}
-
-	@Override
-	public void handleAsyncEvent() {
-		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(5000, 0));
-		car.setReleaseParameters(rel);
-		car.schedulePeriodic();
-	}
-}
-
-class speedUp extends AsyncEventHandler {
-	car car;
-
-	public speedUp(car car) {
-		this.car = car;
-	}
-
-	@Override
-	public void handleAsyncEvent() {
-		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(3000, 0));
-		car.setReleaseParameters(rel);
-		car.schedulePeriodic();
-	}
-}
-
-class incident extends AsyncEventHandler {
-	car car;
-
-	public incident(car car) {
-		this.car = car;
-	}
-
-	@Override
-	public void handleAsyncEvent() {
-		ReleaseParameters rel = new PeriodicParameters(new RelativeTime(8000, 0));
-		car.setReleaseParameters(rel);
-		car.schedulePeriodic();
 	}
 }
