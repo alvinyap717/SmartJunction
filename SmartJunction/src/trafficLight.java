@@ -74,7 +74,7 @@ class HLock implements Interruptible {
 				}
 				System.out.println(trafficLight.getTime() + "   TL   *****Horizontal Road traffic light turns RED*****");
 				System.out.println(trafficLight.getTime() + "   TL   *****Vertical Road traffic light turns GREEN*****");
-				
+				System.out.println(trafficLight.getTime() + "   TL   *****Pedestrian crossing Pedestrian cross 2*****");
 			}
 			try {
 				Thread.sleep(1000);
@@ -108,6 +108,7 @@ class VLock implements Interruptible {
 				}
 				System.out.println(trafficLight.getTime() + "   TL   *****Vertical Road traffic light turns RED*****");
 				System.out.println(trafficLight.getTime() + "   TL   *****Horizontal Road traffic light turns GREEN*****");
+				System.out.println(trafficLight.getTime() + "   TL   *****Pedestrian crossing Pedestrian cross 1*****");
 			}
 			try {
 				Thread.sleep(1000);

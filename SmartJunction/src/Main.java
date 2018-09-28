@@ -48,10 +48,6 @@ public class Main {
 		acS.start();
 		
 		tfS.start();
-		
-		/*pedestrianRoad pr = new pedestrianRoad();
-		pr.setReleaseParameters(prel);
-		pr.start();*/
 	}
 }
 

@@ -29,7 +29,8 @@ public class car extends RealtimeThread {
 							System.out.println(getTime() + "   C    Car " + id + " entering road " + road);
 							distance = 0;
 						} else {
-							System.out.println(getTime() + "   C    Road " + (road+3) + " is full. Car " + id + " is waiting in road " + road);
+							System.out.println(getTime() + "   C    Road " + (road+3) + " is full. Car " + id 
+									+ " is waiting in road " + road);
 						}
 					} else {
 						System.out.println(getTime() + "   JL   Car " + id + " is waiting in road " + road);
@@ -45,7 +46,8 @@ public class car extends RealtimeThread {
 							System.out.println(getTime() + "   C    Car " + id + " entering road " + road);
 							distance = 0;
 						} else {
-							System.out.println(getTime() + "   C    Road " + (road+1) + " is full. Car " + id + " is waiting in road " + road);
+							System.out.println(getTime() + "   C    Road " + (road+1) + " is full. Car " + id 
+									+ " is waiting in road " + road);
 						}
 					} else {
 						System.out.println(getTime() + "   JL   Car " + id + " is waiting in road " + road);
@@ -54,7 +56,8 @@ public class car extends RealtimeThread {
 				}
 				else {
 					removeActiveCar(this);
-					System.out.println(getTime() + "   C    Car " + id + " has reach the end of road " + road + " and leave");
+					System.out.println(getTime() + "   C    Car " + id + " has reach the end of road " + road 
+							+ " and leave");
 					deschedulePeriodic();
 					break;
 				}

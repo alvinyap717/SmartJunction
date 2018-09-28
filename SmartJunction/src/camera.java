@@ -63,8 +63,8 @@ class Normal implements Interruptible {
 	@Override
 	public void run(AsynchronouslyInterruptedException exception) throws AsynchronouslyInterruptedException {
 		while (true) {
-			int x = new Random().nextInt((2 - 1) + 1) + 1;
-			if (x == 1) {
+			int x = new Random().nextInt((20 - 1) + 1) + 1;
+			if (x == 11) {
 				tfS.incidentMode.fire();
 				camera.accident = true;
 			}
